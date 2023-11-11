@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="1920px"
+        android:layout_height="1080px"
+        app:layout_constraintDimensionRatio="16:9"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <com.example.avtrainingnative.OverlayView
+        android:id="@+id/overlayView"
+        android:layout_width="1920px"
+        android:layout_height="1080px"
+        app:layout_constraintDimensionRatio="16:9"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/translateLeft"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:backgroundTint="@color/cardview_light_background"
+        android:text="LEFT"
+        android:textColor="@color/black"
+        android:layout_margin="8dp"
+        app:layout_constraintBottom_toTopOf="@id/translateBottom"
+        app:layout_constraintEnd_toStartOf="@+id/translateRight" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/translateRight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RIGHT"
+        android:textColor="@color/black"
+        android:layout_margin="8dp"
+        android:backgroundTint="@color/cardview_light_background"
+        app:layout_constraintBottom_toTopOf="@id/translateBottom"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/translateUp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="UP"
+        android:textColor="@color/black"
+        android:layout_margin="8dp"
+        android:backgroundTint="@color/cardview_light_background"
+        app:layout_constraintBottom_toTopOf="@+id/translateRight"
+        app:layout_constraintEnd_toEndOf="@+id/translateRight"
+        app:layout_constraintStart_toStartOf="@+id/translateLeft" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/translateBottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:backgroundTint="@color/cardview_light_background"
+        android:text="BOTTOM"
+        android:textColor="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/translateRight"
+        app:layout_constraintStart_toStartOf="@+id/translateLeft" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
