@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -20,6 +21,11 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var alphaChannelTxt: TextView
+    private lateinit var redChannelTxt: TextView
+    private lateinit var greenChannelTxt: TextView
+    private lateinit var blueChannelTxt: TextView
+
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
 
@@ -30,10 +36,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bottomButton: Button
     private lateinit var upButton: Button
 
-    // Capture settings
-    private val cropArea = Size(250, 250)
-    private val cropCenter = Point(960, 540)
-    private val translatationStep = 10
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,23 +63,28 @@ class MainActivity : AppCompatActivity() {
         bottomButton = viewBinding.translateBottom
         upButton = viewBinding.translateUp
 
+        alphaChannelTxt = viewBinding.alphaChannelTxt
+        redChannelTxt = viewBinding.redChannelTxt
+        greenChannelTxt = viewBinding.greenChannelTxt
+        blueChannelTxt = viewBinding.blueChannelTxt
+
         leftButton.setOnClickListener {
-            cropCenter.x -= translatationStep
+            cropCenter.x -= translationStep
             setRectanglePositionAndDimensions()
         }
 
         rightButton.setOnClickListener {
-            cropCenter.x += translatationStep
+            cropCenter.x += translationStep
             setRectanglePositionAndDimensions()
         }
 
         bottomButton.setOnClickListener {
-            cropCenter.y += translatationStep
+            cropCenter.y += translationStep
             setRectanglePositionAndDimensions()
         }
 
         upButton.setOnClickListener {
-            cropCenter.y -= translatationStep
+            cropCenter.y -= translationStep
             setRectanglePositionAndDimensions()
         }
 
@@ -91,15 +98,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(
         requestCode: Int, permissions: Array<String>, grantResults:
-        IntArray) {
+        IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
             if (allPermissionsGranted()) {
                 startCamera()
             } else {
-                Toast.makeText(this,
+                Toast.makeText(
+                    this,
                     "Permissions not granted by the user.",
-                    Toast.LENGTH_SHORT).show()
+                    Toast.LENGTH_SHORT
+                ).show()
                 finish()
             }
         }
@@ -121,10 +131,16 @@ class MainActivity : AppCompatActivity() {
 
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setTargetResolution(Size(1920, 1080))
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
                 .also {
                     it.setAnalyzer(cameraExecutor, ArgbAnalyzer { argbValues ->
-                        Log.d(TAG, "Average luminosity: $argbValues")
+                        runOnUiThread {
+                            alphaChannelTxt.text = "Alpha : ${argbValues.alpha}"
+                            redChannelTxt.text = "Red : ${argbValues.red}"
+                            greenChannelTxt.text = "Green : ${argbValues.green}"
+                            blueChannelTxt.text = "Blue : ${argbValues.blue}"
+                        }
                     })
                 }
 
@@ -165,6 +181,11 @@ class MainActivity : AppCompatActivity() {
             mutableListOf(
                 android.Manifest.permission.CAMERA
             ).toTypedArray()
+
+        // Capture settings
+        var cropArea = Size(250, 250)
+        var cropCenter = Point(960, 540)
+        const val translationStep = 10
 
         // Used to load the 'avtrainingnative' library on application startup.
         init {

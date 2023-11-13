@@ -1,5 +1,6 @@
 package com.example.avtrainingnative
 
+import android.util.Size
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import java.nio.ByteBuffer
@@ -9,19 +10,25 @@ import java.nio.ByteBuffer
 typealias argbResult = (argb: ArgbResult) -> Unit
 
 class ArgbAnalyzer(private val listener: argbResult) : ImageAnalysis.Analyzer {
-    private fun ByteBuffer.toByteArray(): ByteArray {
-        rewind()    // Rewind the buffer to zero
-        val data = ByteArray(remaining())
-        get(data)   // Copy the buffer into a byte array
-        return data // Return the byte array
+    override fun analyze(image: ImageProxy) {
+        // Get the ARGB data from the ImageProxy
+        val argbData = image.planes[0].buffer.toByteArray()
+
+        // Call the native method to analyze the ARGB data
+        val result = analyzeImage(argbData, image.width, image.height, MainActivity.cropArea.width, MainActivity.cropArea.height, MainActivity.cropCenter.x, MainActivity.cropCenter.y)
+
+        // Notify the listener with the result
+        listener.invoke(ArgbResult(result[0], result[1], result[2], result[3]))
+
+        // Close the image
+        image.close()
     }
 
-    override fun analyze(image: ImageProxy) {
-
-
-        //listener(luma)
-
-        image.close()
+    private fun ByteBuffer.toByteArray(): IntArray {
+        rewind()    // Rewind the buffer to zero
+        val data = IntArray(remaining() / 4)
+        asIntBuffer().get(data)   // Copy the buffer into an int array
+        return data // Return the int array
     }
 
 
@@ -29,7 +36,15 @@ class ArgbAnalyzer(private val listener: argbResult) : ImageAnalysis.Analyzer {
      * A native method that is implemented by the 'avtrainingnative' native library,
      * which is packaged with this application.
      */
-    external fun stringFromJNI(): String
+    external fun analyzeImage(
+        argbData: IntArray,
+        imageWidth: Int,
+        imageHeight: Int,
+        areaWidth: Int,
+        areaHeight: Int,
+        areaCenterX: Int,
+        areaCenterY: Int
+    ): DoubleArray
 }
 
 data class ArgbResult(val alpha: Double, val red: Double, val green: Double, val blue: Double)

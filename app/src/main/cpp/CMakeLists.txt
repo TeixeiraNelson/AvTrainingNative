@@ -24,9 +24,19 @@ project("avtrainingnative")
 # System.loadLibrary() and pass the name of the library defined here;
 # for GameActivity/NativeActivity derived applications, the same library name must be
 # used in the AndroidManifest.xml file.
+
+# Add the OpenCV Android SDK path (update this path)
+set(OpenCV_DIR "C:/android/OpenCV-android-sdk/sdk/native/jni")
+
+# Load OpenCV
+find_package(OpenCV REQUIRED)
+
 add_library(${CMAKE_PROJECT_NAME} SHARED
         # List C/C++ source files with relative paths to this CMakeLists.txt.
         native-lib.cpp)
+
+# Include OpenCV headers
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
@@ -34,4 +44,5 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         android
-        log)
+        log
+        ${OpenCV_LIBS})
