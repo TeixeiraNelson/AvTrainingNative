@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.util.Size
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -25,6 +26,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var redChannelTxt: TextView
     private lateinit var greenChannelTxt: TextView
     private lateinit var blueChannelTxt: TextView
+
+    private lateinit var croppedImage: ImageView
 
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
@@ -67,6 +70,8 @@ class MainActivity : AppCompatActivity() {
         redChannelTxt = viewBinding.redChannelTxt
         greenChannelTxt = viewBinding.greenChannelTxt
         blueChannelTxt = viewBinding.blueChannelTxt
+
+        croppedImage = viewBinding.croppedImage
 
         leftButton.setOnClickListener {
             cropCenter.x -= translationStep
@@ -134,14 +139,21 @@ class MainActivity : AppCompatActivity() {
                 .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, ArgbAnalyzer { argbValues ->
-                        runOnUiThread {
-                            alphaChannelTxt.text = "Alpha : ${argbValues.alpha}"
-                            redChannelTxt.text = "Red : ${argbValues.red}"
-                            greenChannelTxt.text = "Green : ${argbValues.green}"
-                            blueChannelTxt.text = "Blue : ${argbValues.blue}"
+                    it.setAnalyzer(cameraExecutor, ArgbAnalyzer(
+                        listener = { argbValues ->
+                            runOnUiThread {
+                                alphaChannelTxt.text = "Alpha : ${argbValues.alpha}"
+                                redChannelTxt.text = "Red : ${argbValues.red}"
+                                greenChannelTxt.text = "Green : ${argbValues.green}"
+                                blueChannelTxt.text = "Blue : ${argbValues.blue}"
+                            }
+                        },
+                        imageListener = { imageResult ->
+                            runOnUiThread {
+                                croppedImage.setImageBitmap(imageResult)
+                            }
                         }
-                    })
+                    ))
                 }
 
             // Select back camera as a default

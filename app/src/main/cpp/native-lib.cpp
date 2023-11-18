@@ -4,11 +4,11 @@
 
 extern "C"
 JNIEXPORT _jdoubleArray * JNICALL
-Java_com_example_avtrainingnative_ArgbAnalyzer_analyzeImage(JNIEnv *env, jobject thiz,
-                                                            jintArray argb_data, jint image_width,
-                                                            jint image_height, jint area_width,
-                                                            jint area_height, jint area_center_x,
-                                                            jint area_center_y) {
+Java_com_example_avtrainingnative_ArgbAnalyzer_analyzeImageOpenCV(JNIEnv *env, jobject thiz,
+                                                                  jintArray argb_data, jint image_width,
+                                                                  jint image_height, jint area_width,
+                                                                  jint area_height, jint area_center_x,
+                                                                  jint area_center_y) {
     // Obtain the native array from Java
     jint *argb_data_ptr = env->GetIntArrayElements(argb_data, 0);
 
@@ -50,6 +50,90 @@ Java_com_example_avtrainingnative_ArgbAnalyzer_analyzeImage(JNIEnv *env, jobject
         jdouble meanRed = meanValues[2];    // Red channel
         jdouble meanGreen = meanValues[1];  // Green channel
         jdouble meanBlue = meanValues[0];   // Blue channel
+
+        jdouble meanValuesArray[] = {meanAlpha, meanRed, meanGreen, meanBlue};
+
+        // Set the values in the result array
+        env->SetDoubleArrayRegion(resultArray, 0, 4, meanValuesArray);
+    }
+
+    return resultArray;
+}
+
+extern "C"
+JNIEXPORT _jdoubleArray * JNICALL
+Java_com_example_avtrainingnative_ArgbAnalyzer_analyzeImageCpp(JNIEnv *env, jobject thiz,
+                                                                  jintArray argb_data, jint image_width,
+                                                                  jint image_height, jint area_width,
+                                                                  jint area_height, jint area_center_x,
+                                                                  jint area_center_y) {
+    // Obtain a pointer to the native array in Java
+    jint *argb_data_ptr = env->GetIntArrayElements(argb_data, 0);
+
+    // Calculate the coordinates for cropping and make sure that
+    // the x cannot be below 0 (same for Y), making sure that it is not out of the image
+    int x = std::max(0, area_center_x - area_width / 2);
+    int y = std::max(0, area_center_y - area_height / 2);
+
+    // Ensure that the crop area does not exceed the image boundaries (on the right side of the image)
+    // this ensures that if the crop center is misplaced, code won't crash
+    // If it is in the image but too much on the right (meaning that there is not enough pixels in the image to do the
+    // entire cropWidth, it will get the pixels available only
+    int cropWidth = std::min(area_width, image_width - x);
+    int cropHeight = std::min(area_height, image_height - y);
+
+    // Create a new array to hold the cropped data
+    jintArray croppedData = env->NewIntArray(cropWidth * cropHeight);
+
+    // Check if array creation is successful
+    if (croppedData == nullptr) {
+        // Handle error
+        return nullptr;
+    }
+
+    // Create a pointer to the cropped data
+    jint *croppedDataPtr = env->GetIntArrayElements(croppedData, nullptr);
+    for(int w = 0; w < cropWidth; w ++) {
+        for(int h = 0; h < cropHeight; h ++){
+            int cropArrayIndex = cropWidth * h + w;
+            int originalImageIndex = image_width * (y + h) + (x + w);
+            croppedDataPtr[cropArrayIndex] = argb_data_ptr[originalImageIndex];
+        }
+    }
+
+    uint sumRed = 0;
+    uint sumGreen = 0;
+    uint sumBlue = 0;
+    uint sumAlpha = 0;
+
+    // now iterate through cropped data to get mean value of ARGB values
+    for(int i = 0; i < cropWidth * cropHeight; i++){
+        uint pixelValue = croppedDataPtr[i];
+
+        // Extracting individual bytes
+        uint alpha = (pixelValue >> 24) & 0xFF;
+        uint blue = (pixelValue >> 16) & 0xFF;
+        uint green = (pixelValue >> 8) & 0xFF;
+        uint red = pixelValue & 0xFF; // <<< ask Yves why ABGR ???
+
+        sumRed += red;
+        sumGreen += green;
+        sumBlue += blue;
+        sumAlpha += alpha;
+    }
+
+    double meanRed = sumRed / (cropWidth * cropHeight);
+    double meanGreen = sumGreen / (cropWidth * cropHeight);
+    double meanBlue = sumBlue / (cropWidth * cropHeight);
+    double meanAlpha = sumAlpha / (cropWidth * cropHeight);
+
+    // Release the arrays
+    env->ReleaseIntArrayElements(argb_data, argb_data_ptr, JNI_ABORT);
+    env->ReleaseIntArrayElements(croppedData, croppedDataPtr, 0);
+
+    // Create a double array to store mean values
+    jdoubleArray resultArray = env->NewDoubleArray(4);
+    if (resultArray != nullptr) {
 
         jdouble meanValuesArray[] = {meanAlpha, meanRed, meanGreen, meanBlue};
 
