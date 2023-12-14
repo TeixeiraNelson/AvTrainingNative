@@ -1,13 +1,15 @@
 package com.example.avtrainingnative
 
+import android.R.attr
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.Point
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -20,14 +22,9 @@ import com.example.avtrainingnative.databinding.ActivityMainBinding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
+
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var alphaChannelTxt: TextView
-    private lateinit var redChannelTxt: TextView
-    private lateinit var greenChannelTxt: TextView
-    private lateinit var blueChannelTxt: TextView
-
-    private lateinit var croppedImage: ImageView
+    private lateinit var resultImage: ImageView
 
     private lateinit var viewBinding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
@@ -38,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var rightButton: Button
     private lateinit var bottomButton: Button
     private lateinit var upButton: Button
-
+    private lateinit var takePicture: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,12 +63,9 @@ class MainActivity : AppCompatActivity() {
         bottomButton = viewBinding.translateBottom
         upButton = viewBinding.translateUp
 
-        alphaChannelTxt = viewBinding.alphaChannelTxt
-        redChannelTxt = viewBinding.redChannelTxt
-        greenChannelTxt = viewBinding.greenChannelTxt
-        blueChannelTxt = viewBinding.blueChannelTxt
+        takePicture = viewBinding.takePicture
 
-        croppedImage = viewBinding.croppedImage
+        resultImage = viewBinding.crossCorrResult
 
         leftButton.setOnClickListener {
             cropCenter.x -= translationStep
@@ -93,6 +87,12 @@ class MainActivity : AppCompatActivity() {
             setRectanglePositionAndDimensions()
         }
 
+        takePicture.setOnClickListener {
+            isPictureClicked = true
+            takePicture.isEnabled = false
+            viewBinding.progressCircular.visibility = View.VISIBLE
+        }
+
         setRectanglePositionAndDimensions()
     }
 
@@ -102,8 +102,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<String>, grantResults:
-        IntArray
+        requestCode: Int, permissions: Array<String>,
+        grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_PERMISSIONS) {
@@ -136,21 +136,23 @@ class MainActivity : AppCompatActivity() {
 
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setTargetResolution(Size(1920, 1080))
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, ArgbAnalyzer(
-                        listener = { argbValues ->
+                    it.setAnalyzer(cameraExecutor, ImageAnalyzer(
+                        context = this@MainActivity,
+                        cropListener = { cropResult ->
+                            val bitmap = byteArrayToBitmap(cropResult, cropArea.width, cropArea.height)
                             runOnUiThread {
-                                alphaChannelTxt.text = "Alpha : ${argbValues.alpha}"
-                                redChannelTxt.text = "Red : ${argbValues.red}"
-                                greenChannelTxt.text = "Green : ${argbValues.green}"
-                                blueChannelTxt.text = "Blue : ${argbValues.blue}"
+                                viewBinding.cropResult.setImageBitmap(bitmap)
                             }
                         },
-                        imageListener = { imageResult ->
+                        crossCorrListener = { xCorrResult ->
+                            val bitmap = byteArrayToBitmap(xCorrResult, cropArea.width, cropArea.height)
                             runOnUiThread {
-                                croppedImage.setImageBitmap(imageResult)
+                                viewBinding.crossCorrResult.setImageBitmap(bitmap)
+                                takePicture.isEnabled = true
+                                viewBinding.progressCircular.visibility = View.INVISIBLE
                             }
                         }
                     ))
@@ -175,6 +177,21 @@ class MainActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+    fun byteArrayToBitmap(data: ByteArray, width: Int, height: Int): Bitmap {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+        // Fill the bitmap with grayscale data
+        val pixels = IntArray(width * height)
+        for (i in data.indices) {
+            val gray: Int = data[i].toInt() and 0xFF
+            pixels[i] = 0xFF000000.toInt() or (gray shl 16) or (gray shl 8) or gray
+        }
+
+        bitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+
+        return bitmap
+    }
+
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(
             baseContext, it
@@ -195,8 +212,9 @@ class MainActivity : AppCompatActivity() {
             ).toTypedArray()
 
         // Capture settings
-        var cropArea = Size(250, 250)
+        var cropArea = Size(256, 256)
         var cropCenter = Point(960, 540)
+        var isPictureClicked = false
         const val translationStep = 10
 
         // Used to load the 'avtrainingnative' library on application startup.

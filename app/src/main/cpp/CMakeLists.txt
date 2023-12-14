@@ -42,7 +42,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 # can link libraries from various origins, such as libraries defined in this
 # build script, prebuilt third-party libraries, or Android system libraries.
 target_link_libraries(${CMAKE_PROJECT_NAME}
+        -ljnigraphics
         # List libraries link to the target library
+        ${OpenCV_LIBS}
         android
-        log
-        ${OpenCV_LIBS})
+        log)
