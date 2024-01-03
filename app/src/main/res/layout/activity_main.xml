@@ -72,6 +72,16 @@
         android:src="@drawable/template"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <TextView
+        android:id="@+id/snr_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:background="@color/black"
+        android:textColor="@color/white"
+        app:layout_constraintStart_toStartOf="@+id/template"
+        app:layout_constraintTop_toBottomOf="@+id/template" />
+
     <ImageView
         android:id="@+id/cropResult"
         android:layout_width="wrap_content"

@@ -14,10 +14,11 @@ import java.nio.ByteBuffer
 
 /** Helper type alias used for analysis use case callbacks */
 typealias imageResult = (result: ByteArray) -> Unit
+typealias imageAnalysisResult = (result: ImageAnalysisResult) -> Unit
 
 class ImageAnalyzer(
     private val cropListener: imageResult,
-    private val crossCorrListener: imageResult,
+    private val  crossCorrListener: imageAnalysisResult,
     private val context: Context,
 ) : ImageAnalysis.Analyzer, ImageCapture.OnImageCapturedCallback() {
     private var template: ByteArray? = null
@@ -160,5 +161,5 @@ class ImageAnalyzer(
         templateImage: ByteArray,
         imageWidth: Int,
         imageHeight: Int
-    ): ByteArray
+    ): ImageAnalysisResult
 }

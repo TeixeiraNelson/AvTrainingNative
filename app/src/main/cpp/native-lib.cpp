@@ -198,7 +198,7 @@ Java_com_example_avtrainingnative_ImageAnalyzer_cropImage(JNIEnv *env, jobject t
 
 
 extern "C"
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jobject JNICALL
 Java_com_example_avtrainingnative_ImageAnalyzer_crossCorr(JNIEnv *env, jobject thiz,
                                                          jbyteArray source_image,
                                                           jbyteArray template_image,
@@ -219,6 +219,8 @@ Java_com_example_avtrainingnative_ImageAnalyzer_crossCorr(JNIEnv *env, jobject t
     // Perform cross-correlation and populate resultDataPtr
     double min = std::numeric_limits<double>::max();
     double max = std::numeric_limits<double>::min();
+    double mean = 0.0;
+
     int resultWidth = image_width;
     int resultHeight = image_height;
 
@@ -256,17 +258,32 @@ Java_com_example_avtrainingnative_ImageAnalyzer_crossCorr(JNIEnv *env, jobject t
             }
             max = std::max(max, crossCorr);
             min = std::min(min, crossCorr);
+            mean += crossCorr;
             resultValues[resultIndex] = crossCorr;
         }
     }
+
+    mean /= (resultWidth * resultHeight);
+    // Calculate SNR
+    double snr = 20 * std::log10((max - min) / (mean - min));
+
     // Normalize resultDataPtr between 0 and 255
     for (int i = 0; i < resultWidth * resultHeight; i++) {
         // Perform the normalization and cast to uint8_t
         resultData[i] = static_cast<jbyte>(static_cast<jint>((resultValues[i] - min) / (max - min) * 255.0));
     }
+    // Create a new instance of ImageAnalysisResult and set its fields
+    jclass resultClass = env->FindClass("com/example/avtrainingnative/ImageAnalysisResult");
+    jmethodID resultConstructor = env->GetMethodID(resultClass, "<init>", "([BD)V");
+
+    jbyteArray resultArrayCopy = env->NewByteArray(image_height * image_width);
+    env->SetByteArrayRegion(resultArrayCopy, 0, image_height * image_width, resultData);
+
+    jobject resultObject = env->NewObject(resultClass, resultConstructor, resultArrayCopy, snr);
+
     // Release the native arrays
     env->ReleaseByteArrayElements(source_image, source_data, JNI_ABORT);
     env->ReleaseByteArrayElements(template_image, template_data, JNI_ABORT);
 
-    return resultArray;
+    return resultObject;
 }

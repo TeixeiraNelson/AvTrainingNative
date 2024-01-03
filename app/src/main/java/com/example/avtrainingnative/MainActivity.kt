@@ -148,10 +148,11 @@ class MainActivity : AppCompatActivity() {
                             }
                         },
                         crossCorrListener = { xCorrResult ->
-                            val bitmap = byteArrayToBitmap(xCorrResult, cropArea.width, cropArea.height)
+                            val bitmap = byteArrayToBitmap(xCorrResult.resultArray, cropArea.width, cropArea.height)
                             runOnUiThread {
                                 viewBinding.crossCorrResult.setImageBitmap(bitmap)
                                 takePicture.isEnabled = true
+                                viewBinding.snrValue.text = xCorrResult.snr.toString()
                                 viewBinding.progressCircular.visibility = View.INVISIBLE
                             }
                         }
